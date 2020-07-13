@@ -9,7 +9,7 @@ class Client
     const POS_END = 'POS_END';
 
     private $aria2;
-    public $savePath;
+    private $options = [];
 
     private $last_error_code;
     private $last_error_message;
@@ -17,20 +17,23 @@ class Client
 
     public function __construct(
         string $url = 'http://127.0.0.1:6800/jsonrpc',
-        string $token = null,
-        string $proxy=null
-    )
-    {
-        $this->aria2 = new JsonRpcClient($url, $token, $proxy);
+        string $token = null
+    ) {
+        $this->aria2 = new JsonRpcClient($url, $token);
     }
 
     /**
-     * @param string $savePath
+     * @param string|array $name
+     * @param mixed $value
      * @return $this
      */
-    public function setSavePath(string $savePath): Client
+    public function setOption($name, $value = null): Client
     {
-        $this->savePath = $savePath;
+        if (is_array($name) && is_null($value)) {
+            $this->options = array_merge($this->options, $name);
+        } else {
+            $this->options[$name] = $value;
+        }
 
         return $this;
     }
@@ -44,10 +47,10 @@ class Client
      *
      * @link https://aria2.github.io/manual/en/html/aria2c.html#aria2.addUri
      *
-     * @param  string[]|string  $url      投递链接
-     * @param  string           $file     保存到指定的文件名
-     * @param  mixed[]          $options  见 {@see https://aria2.github.io/manual/en/html/aria2c.html#options aria2 Options} 文档
-     * @param  int|null         $position 插入队列位置，当大于队列长度或未指定时插入到队列尾部
+     * @param string[]|string $url 投递链接
+     * @param string $file 保存到指定的文件名
+     * @param mixed[] $options 见 {@see https://aria2.github.io/manual/en/html/aria2c.html#options aria2 Options} 文档
+     * @param int|null $position 插入队列位置，当大于队列长度或未指定时插入到队列尾部
      * @return mixed[]|false
      */
     public function addUri(
@@ -56,9 +59,6 @@ class Client
         array $options = [],
         int $position = null
     ) {
-        if ($this->savePath) {
-            $options['dir'] = $this->savePath;
-        }
         if ($file) {
             $options['out'] = $file;
         }
@@ -66,6 +66,9 @@ class Client
         $params = [
             is_array($url) ? $url : [$url],
         ];
+
+        $options = array_merge($this->options, $options);
+
         if ($options) {
             $params[] = $options;
         }
@@ -86,18 +89,20 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.addTorrent
      *
-     * @param  string            $torrent     经 base64 编码后的种子文件
-     * @param  string[]|string   $urls        used for Web-seeding
-     * @param  string            $file
-     * @param  mixed[]           $options
-     * @param  int|null          $position
+     * @param string $torrent 经 base64 编码后的种子文件
+     * @param string[]|string $urls used for Web-seeding
+     * @param string $file
+     * @param mixed[] $options
+     * @param int|null $position
      * @return miexed[]|false
      */
-    public function addTorrent(string $torrent, $urls = [], string $file = null, array $options = [], int $position = null)
-    {
-        if ($this->savePath) {
-            $options['dir'] = $this->savePath;
-        }
+    public function addTorrent(
+        string $torrent,
+        $urls = [],
+        string $file = null,
+        array $options = [],
+        int $position = null
+    ) {
         if ($file) {
             $options['out'] = $file;
         }
@@ -110,6 +115,9 @@ class Client
         if ($urls) {
             $params[] = $urls;
         }
+
+        $options = array_merge($this->options, $options);
+
         if ($options) {
             $params[] = $options;
         }
@@ -129,23 +137,23 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.addMetalink
      *
-     * @param  string            $metalink    经 base64 编码后的 metalink 文件
-     * @param  string            $file
-     * @param  mixed[]           $options
-     * @param  int|null          $position
+     * @param string $metalink 经 base64 编码后的 metalink 文件
+     * @param string $file
+     * @param mixed[] $options
+     * @param int|null $position
      * @return miexed[]|false
      */
     public function addMetalink(string $metalink, string $file = null, array $options = [], int $position = null)
     {
-        if ($this->savePath) {
-            $options['dir'] = $this->savePath;
-        }
         if ($file) {
             $options['out'] = $file;
         }
         $params = [
             $metalink,
         ];
+
+        $options = array_merge($this->options, $options);
+
         if ($options) {
             $params[] = $options;
         }
@@ -162,14 +170,14 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.remove
      *
-     * @param  string         $gid 下载项 GID
+     * @param string $gid 下载项 GID
      * @return string|false
      */
     public function remove(string $gid)
     {
         $response = $this->aria2->remove($gid);
         $this->handleError($response);
-        return ((string) $response['result']) ?: false;
+        return ((string)$response['result']) ?: false;
     }
 
     /**
@@ -177,14 +185,14 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.forceRemove
      *
-     * @param  string         $gid 下载项 GID
+     * @param string $gid 下载项 GID
      * @return string|false
      */
     public function forceRemove(string $gid)
     {
         $response = $this->aria2->forceRemove($gid);
         $this->handleError($response);
-        return ((string) $response['result']) ?: false;
+        return ((string)$response['result']) ?: false;
     }
 
     /**
@@ -192,14 +200,14 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.pause
      *
-     * @param  string         $gid 下载项 GID
+     * @param string $gid 下载项 GID
      * @return string|false
      */
     public function pause(string $gid)
     {
         $response = $this->aria2->pause($gid);
         $this->handleError($response);
-        return ((string) $response['result']) ?: false;
+        return ((string)$response['result']) ?: false;
     }
 
     /**
@@ -221,14 +229,14 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.forcePause
      *
-     * @param  string         $gid 下载项 GID
+     * @param string $gid 下载项 GID
      * @return string|false
      */
     public function forcePause(string $gid)
     {
         $response = json_decode($this->aria2->forcePause($gid), true);
         $this->handleError($response);
-        return ((string) $response['result']) ?: false;
+        return ((string)$response['result']) ?: false;
     }
 
     /**
@@ -250,14 +258,14 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.unpause
      *
-     * @param  string         $gid 下载项 GID
+     * @param string $gid 下载项 GID
      * @return string|false
      */
     public function unpause(string $gid)
     {
         $response = $this->aria2->unpause($gid);
         $this->handleError($response);
-        return ((string) $response['result']) ?: false;
+        return ((string)$response['result']) ?: false;
     }
 
     /**
@@ -281,8 +289,8 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.tellStatus
      *
-     * @param  string    $gid  下载项 gid
-     * @param  string[]  $keys 查询项
+     * @param string $gid 下载项 gid
+     * @param string[] $keys 查询项
      * @return mixed[]
      */
     public function tellStatus(string $gid, array $keys = [])
@@ -303,7 +311,7 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.getUris
      *
-     * @param  string    $gid 下载项 GID
+     * @param string $gid 下载项 GID
      * @return mixed[]
      */
     public function getUris(string $gid)
@@ -318,7 +326,7 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.getFiles
      *
-     * @param  string    $gid 下载项 GID
+     * @param string $gid 下载项 GID
      * @return mixed[]
      */
     public function getFiles(string $gid)
@@ -333,7 +341,7 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.getPeers
      *
-     * @param  string    $gid 下载项 GID
+     * @param string $gid 下载项 GID
      * @return mixed[]
      */
     public function getPeers(string $gid)
@@ -348,7 +356,7 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.getServers
      *
-     * @param  string    $gid 下载项 GID
+     * @param string $gid 下载项 GID
      * @return mixed[]
      */
     public function getServers(string $gid)
@@ -363,7 +371,7 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.tellActive
      *
-     * @param  string[]  $keys 查询项
+     * @param string[] $keys 查询项
      * @return mixed[]
      */
     public function tellActive(array $keys = [])
@@ -382,9 +390,9 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.tellWaiting
      *
-     * @param  int       $offset 从队列的指定位置取起，从0开始，支持负数，指定负数时表示从倒数第N个取起，此时返回的列表是倒序的！
-     * @param  int       $num    获取数量
-     * @param  string[]  $keys   查询项
+     * @param int $offset 从队列的指定位置取起，从0开始，支持负数，指定负数时表示从倒数第N个取起，此时返回的列表是倒序的！
+     * @param int $num 获取数量
+     * @param string[] $keys 查询项
      * @return mixed[]
      */
     public function tellWaiting(int $offset, int $num, array $keys = [])
@@ -406,9 +414,9 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.tellStopped
      *
-     * @param  int       $offset
-     * @param  int       $num
-     * @param  string[]  $keys
+     * @param int $offset
+     * @param int $num
+     * @param string[] $keys
      * @return mixed[]
      */
     public function tellStopped(int $offset, int $num, array $keys = [])
@@ -430,9 +438,9 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.changePosition
      *
-     * @param  string      $gid 下载项 GID
-     * @param  int         $pos 要移动的位置量，与 $how 参数关联
-     * @param  string      $how POS_* 常量
+     * @param string $gid 下载项 GID
+     * @param int $pos 要移动的位置量，与 $how 参数关联
+     * @param string $how POS_* 常量
      * @return int|false
      */
     public function changePosition(string $gid, int $pos, string $how)
@@ -443,7 +451,7 @@ class Client
         }
         $response = $this->aria2->tellStopped($gid, $pos, $how);
         $this->handleError($response);
-        return ((int) $response['result']) ?? false;
+        return ((int)$response['result']) ?? false;
     }
 
     /**
@@ -451,15 +459,16 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.changeUri
      *
-     * @param  string   $gid       下载项 GID
-     * @param  int      $fileIndex 文件在下载项中的位置，从1开始
-     * @param  string[] $delUris   要删除的url数组，注意：当文件存在N个相同的下载链接时，如果你想把他们都移除掉，你就要指定N次该链接
-     * @param  string[] $addUris   要添加的url数组
-     * @param  int|null $position  添加url的位置，从0开始，当未指定时将插入到最后。当同时指定了删除数组以及添加数组时，先执行删除操作，再执行添加操作，所以position应当是删除过后的位置，而不是删除前的。
+     * @param string $gid 下载项 GID
+     * @param int $fileIndex 文件在下载项中的位置，从1开始
+     * @param string[] $delUris 要删除的url数组，注意：当文件存在N个相同的下载链接时，如果你想把他们都移除掉，你就要指定N次该链接
+     * @param string[] $addUris 要添加的url数组
+     * @param int|null $position 添加url的位置，从0开始，当未指定时将插入到最后。当同时指定了删除数组以及添加数组时，先执行删除操作，再执行添加操作，所以position应当是删除过后的位置，而不是删除前的。
      * @return int[]
      */
-    public function changeUri(string $gid, int $fileIndex, array $delUris = [], array $addUris = [], int $position = null)
-    {
+    public function changeUri(
+        string $gid, int $fileIndex, array $delUris = [], array $addUris = [], int $position = null
+    ) {
         $params = [
             $gid,
             $fileIndex,
@@ -469,8 +478,8 @@ class Client
         if ($position !== null) {
             $params[] = $position;
         }
-        $response             = $this->aria2->changeUri(...$params);
-        $counts               = $response['result'] ?? [];
+        $response = $this->aria2->changeUri(...$params);
+        $counts   = $response['result'] ?? [];
         @list($deled, $added) = $counts;
         return [$deled ?? 0, $added ?? 0];
     }
@@ -480,7 +489,7 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.getOption
      *
-     * @param  string    $gid 下载项 GID
+     * @param string $gid 下载项 GID
      * @return mixed[]
      */
     public function getOption(string $gid)
@@ -495,8 +504,8 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.changeOption
      *
-     * @param  string  $gid     下载项 GID
-     * @param  mixed[] $options 要更改的配置项，有部分配置无法修改
+     * @param string $gid 下载项 GID
+     * @param mixed[] $options 要更改的配置项，有部分配置无法修改
      * @return bool
      */
     public function changeOption(string $gid, array $options)
@@ -525,7 +534,7 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.changeGlobalOption
      *
-     * @param  mixed[] $options 要更改的配置项，有部分配置无法修改
+     * @param mixed[] $options 要更改的配置项，有部分配置无法修改
      * @return bool
      */
     public function changeGlobalOption(array $options)
@@ -568,7 +577,7 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#aria2.removeDownloadResult
      *
-     * @param  string $gid 下载项 GID
+     * @param string $gid 下载项 GID
      * @return bool
      */
     public function removeDownloadResult(string $gid)
@@ -655,7 +664,7 @@ class Client
      *
      * @see https://aria2.github.io/manual/en/html/aria2c.html#system.multicall
      *
-     * @param  mixed[]   $methods
+     * @param mixed[] $methods
      * @return mixed[]
      */
     public function multicall(array $methods)
@@ -708,8 +717,8 @@ class Client
             $this->last_error_response = $response;
         } else {
             if (isset($response['error'])) {
-                $this->last_error_code     = (int) $response['error'];
-                $this->last_error_message  = (string) ($response['message'] ?? '');
+                $this->last_error_code     = (int)$response['error'];
+                $this->last_error_message  = (string)($response['message'] ?? '');
                 $this->last_error_response = $response;
             } else {
                 $this->last_error_code     = null;

@@ -20,12 +20,11 @@ class JsonRpcClient
      */
     private $ch;
 
-    public function __construct(string $url, $token = null, $proxy = null)
+    public function __construct(string $url, $token = null)
     {
         $this->url = $url;
 
         $this->token = $token;
-        $this->proxy = $proxy;
         $this->ch    = curl_init($url);
 
         $timeout = 5;
@@ -68,7 +67,10 @@ class JsonRpcClient
         curl_setopt($this->ch, CURLOPT_POSTFIELDS, $json);
 
         $response = curl_exec($this->ch);
-        $errno = curl_errno($this->ch) ?: null;
+
+        if($response===false) {
+            trigger_error(curl_error($this->ch));
+        }
 
         $response = json_decode($response, true);
 

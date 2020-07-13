@@ -12,10 +12,6 @@ class JsonRpcClient
      */
     private $token;
     /**
-     * @var null
-     */
-    private $proxy;
-    /**
      * @var false|resource
      */
     private $ch;

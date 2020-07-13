@@ -2,11 +2,10 @@
 
 namespace Sco\Aria2;
 
-
 class JsonRpcClient
 {
     protected $url    = '';
-    private   $uniqId = 1;
+    private $uniqId = 1;
     /**
      * @var null
      */
@@ -57,14 +56,14 @@ class JsonRpcClient
         ]);
 
         curl_setopt($this->ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json; charset=utf-8'
+            'Content-Type: application/json; charset=utf-8',
         ]);
 
         curl_setopt($this->ch, CURLOPT_POSTFIELDS, $json);
 
         $response = curl_exec($this->ch);
 
-        if($response===false) {
+        if ($response === false) {
             trigger_error(curl_error($this->ch));
         }
 

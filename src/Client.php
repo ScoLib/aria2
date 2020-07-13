@@ -461,13 +461,20 @@ class Client
      *
      * @param string $gid 下载项 GID
      * @param int $fileIndex 文件在下载项中的位置，从1开始
-     * @param string[] $delUris 要删除的url数组，注意：当文件存在N个相同的下载链接时，如果你想把他们都移除掉，你就要指定N次该链接
+     * @param string[] $delUris 要删除的url数组，注意：当文件存在N个相同的下载链接时，
+     *                          如果你想把他们都移除掉，你就要指定N次该链接
      * @param string[] $addUris 要添加的url数组
-     * @param int|null $position 添加url的位置，从0开始，当未指定时将插入到最后。当同时指定了删除数组以及添加数组时，先执行删除操作，再执行添加操作，所以position应当是删除过后的位置，而不是删除前的。
+     * @param int|null $position 添加url的位置，从0开始，当未指定时将插入到最后。
+     *                          当同时指定了删除数组以及添加数组时，先执行删除操作，再执行添加操作，
+     *                          所以position应当是删除过后的位置，而不是删除前的。
      * @return int[]
      */
     public function changeUri(
-        string $gid, int $fileIndex, array $delUris = [], array $addUris = [], int $position = null
+        string $gid,
+        int $fileIndex,
+        array $delUris = [],
+        array $addUris = [],
+        int $position = null
     ) {
         $params = [
             $gid,

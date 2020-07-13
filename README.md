@@ -19,8 +19,10 @@ $ composer require scolib/aria2
 ## 使用
 
 ``` php
-$skeleton = new Sco\Aria2();
-echo $skeleton->echoPhrase('Hello, League!');
+$client = new Sco\Aria2\Client();
+$client->addUri($url);
+$client->addTorrent($torrent);
+$client->addMetalink($metalink);
 ```
 
 ## 感谢
